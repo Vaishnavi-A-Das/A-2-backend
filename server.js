@@ -1,30 +1,62 @@
+require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
-const path = require('path');
-require('dotenv').config();
-
 const studentRoutes = require('./routes/students');
 
 const app = express();
-app.use(cors());
+
+// Enhanced CORS Configuration
+const corsOptions = {
+  origin: [
+    "https://student-management-frontend-vwi4.onrender.com", // Removed /students from origin
+    "http://localhost:3000" // For local development
+  ],
+  methods: ["GET", "POST", "PUT", "DELETE"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+  credentials: true
+};
+
+// Apply CORS middleware with options
+app.use(cors(corsOptions)); // Remove the duplicate cors() call
+
+// Middleware
 app.use(express.json());
 
-// MongoDB connection
-mongoose.connect(process.env.MONGO_URI)
-  .then(() => console.log("MongoDB Connected"))
-  .catch(err => console.error(err));
-
-// API routes
+// Routes
 app.use('/students', studentRoutes);
 
-// Serve React frontend (build folder)
-app.use(express.static(path.join(__dirname, 'build')));
-
-// Catch-all route to serve index.html for frontend routing
-app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'build', 'index.html'));
+// Health check endpoint
+app.get('/health', (req, res) => {
+  res.status(200).json({ status: 'ok' });
 });
 
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+// Database connection
+mongoose.connect(process.env.MONGO_URI, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true
+})
+  .then(() => {
+    console.log('MongoDB connected');
+    
+    const PORT = process.env.PORT || 5000;
+    const HOST = '0.0.0.0';
+    
+    app.listen(PORT, HOST, () => {
+      console.log(`Server running on http://${HOST}:${PORT}`);
+    });
+  })
+  .catch(err => {
+    console.error('MongoDB connection failed:', err);
+    process.exit(1);
+  });
+
+// Error handling middleware
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(500).json({ error: 'Something broke!' });
+});
+
+process.on('unhandledRejection', (err) => {
+  console.error('Unhandled rejection:', err);
+});
