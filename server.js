@@ -9,7 +9,7 @@ const app = express();
 // Enhanced CORS Configuration
 const corsOptions = {
   origin: [
-    "https://student-management-frontend-vwi4.onrender.com", // Removed /students from origin
+    "https://a-2-frontend.onrender.com", // Removed /students from origin
     "http://localhost:3000" // For local development
   ],
   methods: ["GET", "POST", "PUT", "DELETE"],
